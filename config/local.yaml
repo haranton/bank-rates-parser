@@ -1,0 +1,24 @@
+app:
+  port: 8080
+
+database:
+  host: localhost
+  host_prod: db
+  port: 5432
+  user: db
+  password: db
+  name: db
+
+env: DEBUG   # возможные значения: PRODUCTION или DEBUG
+
+migrations:
+  path: ./migrations
+
+bot:
+  token: "8293047332:AAENghB6i3QbomyZheGAM-DblwdDZgCBJDU"
+
+worker:
+  count: 10
+
+#todo
+NotifyServiceAddr: "localhost:50051" 

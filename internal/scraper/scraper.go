@@ -115,7 +115,7 @@ func (s *Scraper) clickShowMore() error {
 
 // collectCards собирает данные карточек в структуры
 func (s *Scraper) collectCards() ([]models.BankRate, error) {
-	elements, err := s.wd.FindElements(selenium.ByCSSSelector, "div.models.BankRate_wrapper__jKpqw")
+	elements, err := s.wd.FindElements(selenium.ByCSSSelector, "div.DepositCard_wrapper__jKpqw")
 	if err != nil {
 		return nil, fmt.Errorf("ошибка поиска карточек: %v", err)
 	}
@@ -164,8 +164,17 @@ func (s *Scraper) parseCardData(text string) models.BankRate {
 
 		// Определяем ставку
 		if deposit.Rate == 0 && strings.Contains(line, "%") {
-			rate, _ := strconv.Atoi(line)
-			deposit.Rate = float32(rate)
+			// Удаляем все не-цифровые символы, кроме точки и запятой
+			cleaned := strings.TrimSpace(line)
+			cleaned = strings.ReplaceAll(cleaned, "%", "")
+			cleaned = strings.ReplaceAll(cleaned, " ", "")
+
+			// Пробуем преобразовать в float
+			if rate, err := strconv.ParseFloat(cleaned, 32); err == nil {
+				deposit.Rate = float32(rate)
+			} else {
+				fmt.Printf("ОШИБКА: Не удалось преобразовать '%s' в число: %v\n", cleaned, err)
+			}
 			continue
 		}
 
@@ -188,7 +197,7 @@ func (s *Scraper) PrintCards(cards []models.BankRate) {
 		fmt.Printf("Карточка %d:\n", i+1)
 		fmt.Printf("  Банк: %s\n", card.BankName)
 		fmt.Printf("  Вклад: %s\n", card.DepositName)
-		fmt.Printf("  Ставка: %s\n", card.Rate)
+		fmt.Printf("  Ставка: %.2f%%\n", card.Rate)
 		fmt.Println("  ------------------------------------")
 	}
 }

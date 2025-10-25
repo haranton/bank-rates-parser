@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 
 	"google.golang.org/grpc"
@@ -23,6 +24,7 @@ type Sender struct {
 }
 
 func NewSender(storage *storage.Storage, scraper *scraper.Scraper, logger *slog.Logger, cfg *config.Config) (*Sender, error) {
+
 	conn, err := grpc.NewClient(cfg.NotifyServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		logger.Error("failed to create grpc client", "error", err)
@@ -40,13 +42,69 @@ func NewSender(storage *storage.Storage, scraper *scraper.Scraper, logger *slog.
 }
 
 func (s *Sender) Start(ctx context.Context) {
-	ticker := time.NewTicker(10 * time.Second)
+	tickerScraping := time.NewTicker(5 * time.Second)
 
 	go func() {
-		for range ticker.C {
+		for range tickerScraping.C {
 			s.ParseAndSendMessage(ctx)
 		}
 	}()
+
+	tickerAnalitic := time.NewTicker(3 * time.Second)
+
+	go func() {
+		for range tickerAnalitic.C {
+			s.SendAnalytics(ctx)
+		}
+	}()
+
+}
+
+func (s *Sender) SendAnalytics(ctx context.Context) {
+	const op = "sender.SendAnalytics"
+
+	existingRates, err := s.storage.BankRates(ctx)
+	if err != nil {
+		s.logger.Error("failed to get existing rates from db", "error", err, "op", op)
+		return
+	}
+
+	// Проверяем, есть ли данные для отправки
+	if len(existingRates) == 0 {
+		s.logger.Info("no bank rates found for analytics", "op", op)
+		return
+	}
+
+	// Форматируем сообщение в более читаемом виде
+	msg := " **Аналитика ставок по вкладам**\n\n"
+	msg += "| Банк | Вклад | Ставка |\n"
+	msg += "|------|-------|--------|\n"
+
+	for _, bankRate := range existingRates {
+		// Используем правильное форматирование для float и экранируем специальные символы
+		rowStr := fmt.Sprintf("| %s | %s | %.2f%% |\n",
+			escapeMarkdown(bankRate.BankName),
+			escapeMarkdown(bankRate.DepositName),
+			bankRate.Rate)
+		msg += rowStr
+	}
+
+	// Добавляем статистику
+	msg += fmt.Sprintf("\n**Всего банков:** %d", len(existingRates))
+
+	if err := s.Send(msg); err != nil {
+		s.logger.Error("failed to send analytics", "error", err, "op", op)
+	}
+}
+
+// Вспомогательная функция для экранирования Markdown-символов
+func escapeMarkdown(text string) string {
+	specialChars := []string{"_", "*", "[", "]", "(", ")", "~", "`", ">", "#", "+", "-", "=", "|", "{", "}", ".", "!"}
+	result := text
+	for _, char := range specialChars {
+		result = strings.ReplaceAll(result, char, "\\"+char)
+	}
+	return result
 }
 
 func (s *Sender) ParseAndSendMessage(ctx context.Context) {
@@ -104,10 +162,12 @@ func (s *Sender) ParseAndSendMessage(ctx context.Context) {
 			}
 		}
 	}
+	s.scraper.Close()
 }
 
 func (s *Sender) Send(msg string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	resp, err := s.client.SendNotification(ctx, &pb.NotificationRequest{
