@@ -5,15 +5,15 @@ services:
       - "4444:4444"
     shm_size: 2gb
     
-  parser:
-    build: .
-    container_name: bot
-    env_file:
-      - .env
-    ports:
-      - "8080:8080"
-    depends_on:
-      - db
+  # parser:
+  #   build: .
+  #   container_name: bot
+  #   env_file:
+  #     - .env
+  #   ports:
+  #     - "8080:8080"
+  #   depends_on:
+  #     - db
 
   db:
     image: postgres:15

@@ -36,7 +36,7 @@ func RunMigrations(cfg *config.Config, logger *slog.Logger) error {
 	}
 
 	dsn := fmt.Sprintf(
-		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
+		"postgres://%s:%s@%s:%d/%s?sslmode=disable",
 		cfg.Database.User, cfg.Database.Password, DBHost, cfg.Database.Port, cfg.Database.Name,
 	)
 
@@ -86,6 +86,13 @@ func RunMigrations(cfg *config.Config, logger *slog.Logger) error {
 
 	logger.Info("Database migrations ran successfully")
 	return nil
+}
+
+func MustRunMigrations(cfg *config.Config, logger *slog.Logger) {
+	err := RunMigrations(cfg, logger)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func findMigrationsPath() (string, error) {

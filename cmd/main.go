@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bank-rates-parser/internal/app"
 	"bank-rates-parser/internal/config"
 	"bank-rates-parser/internal/logger"
+	"context"
 	"os"
 	"os/signal"
 	"syscall"
@@ -13,33 +15,16 @@ func main() {
 	cfg := config.MustLoad()
 	logger := logger.GetLogger(cfg.Env)
 
-	application := app.NewApp(logger, cfg)
+	application := app.New(cfg, logger)
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
+	ctx := context.TODO()
 
-	go application.GRPCSrv.MustRun()
+	go application.Start(ctx)
 
 	<-stop
+	application.Close()
+	logger.Info("app succesfully stop")
 
-	// // Создаем экземпляр скрапера
-	// scraper := deposit_scraper.NewScraper()
-
-	// // Инициализируем WebDriver
-	// err := scraper.Initialize()
-	// if err != nil {
-	// 	log.Fatalf("Ошибка инициализации: %v", err)
-	// }
-	// defer scraper.Close()
-
-	// // Собираем данные о вкладах
-	// cards, err := scraper.ScrapeDeposits()
-	// if err != nil {
-	// 	log.Fatalf("Ошибка сбора данных: %v", err)
-	// }
-
-	// // Выводим результаты
-	// scraper.PrintCards(cards)
-
-	// fmt.Println("Проверка завершена успешно!")
 }

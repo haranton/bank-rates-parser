@@ -1,44 +1,48 @@
 package scraper
 
 import (
+	"bank-rates-parser/internal/models"
 	"fmt"
+	"log/slog"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/tebeka/selenium"
 )
 
-// Структура для хранения данных карточки вклада
-type DepositCard struct {
-	BankName    string
-	DepositName string
-	Rate        string
-	Income      string
-}
-
 // Scraper - основной компонент для скрапинга вкладов
 type Scraper struct {
-	wd selenium.WebDriver
+	wd     selenium.WebDriver
+	logger *slog.Logger
 }
 
 // NewScraper создает новый экземпляр скрапера
-func NewScraper() *Scraper {
-	return &Scraper{}
+func NewScraper(logger *slog.Logger) *Scraper {
+
+	scr := Scraper{
+		logger: logger,
+	}
+
+	scr.Initialize()
+
+	return &scr
 }
 
 // Initialize инициализирует WebDriver
-func (s *Scraper) Initialize() error {
+func (s *Scraper) Initialize() {
 	fmt.Println("Проверяем подключение к Selenium...")
 
 	caps := selenium.Capabilities{"browserName": "chrome"}
 	wd, err := selenium.NewRemote(caps, "http://localhost:4444/wd/hub")
 	if err != nil {
-		return fmt.Errorf("ошибка подключения: %v", err)
+		msgErr := fmt.Errorf("ошибка подключения: %v", err)
+		panic(msgErr)
 	}
 
 	s.wd = wd
+
 	fmt.Println("Успешно подключились!")
-	return nil
 }
 
 // Close закрывает WebDriver
@@ -49,7 +53,7 @@ func (s *Scraper) Close() {
 }
 
 // ScrapeDeposits основной метод для сбора данных о вкладах
-func (s *Scraper) ScrapeDeposits() ([]DepositCard, error) {
+func (s *Scraper) ScrapeDeposits() ([]models.BankRate, error) {
 	if s.wd == nil {
 		return nil, fmt.Errorf("WebDriver не инициализирован")
 	}
@@ -75,6 +79,8 @@ func (s *Scraper) ScrapeDeposits() ([]DepositCard, error) {
 	if err != nil {
 		return nil, fmt.Errorf("ошибка сбора карточек: %v", err)
 	}
+
+	s.PrintCards(cards)
 
 	return cards, nil
 }
@@ -108,13 +114,13 @@ func (s *Scraper) clickShowMore() error {
 }
 
 // collectCards собирает данные карточек в структуры
-func (s *Scraper) collectCards() ([]DepositCard, error) {
-	elements, err := s.wd.FindElements(selenium.ByCSSSelector, "div.DepositCard_wrapper__jKpqw")
+func (s *Scraper) collectCards() ([]models.BankRate, error) {
+	elements, err := s.wd.FindElements(selenium.ByCSSSelector, "div.models.BankRate_wrapper__jKpqw")
 	if err != nil {
 		return nil, fmt.Errorf("ошибка поиска карточек: %v", err)
 	}
 
-	var cards []DepositCard
+	var cards []models.BankRate
 
 	for _, card := range elements {
 		text, err := card.Text()
@@ -133,9 +139,9 @@ func (s *Scraper) collectCards() ([]DepositCard, error) {
 }
 
 // parseCardData парсит данные из текста карточки
-func (s *Scraper) parseCardData(text string) DepositCard {
+func (s *Scraper) parseCardData(text string) models.BankRate {
 	lines := strings.Split(text, "\n")
-	var deposit DepositCard
+	var deposit models.BankRate
 
 	for i := 0; i < len(lines); i++ {
 		line := strings.TrimSpace(lines[i])
@@ -157,19 +163,14 @@ func (s *Scraper) parseCardData(text string) DepositCard {
 		}
 
 		// Определяем ставку
-		if deposit.Rate == "" && strings.Contains(line, "%") {
-			deposit.Rate = line
-			continue
-		}
-
-		// Определяем доход (содержит "₽" и обычно идет после ставки)
-		if deposit.Income == "" && strings.Contains(line, "₽") {
-			deposit.Income = line
+		if deposit.Rate == 0 && strings.Contains(line, "%") {
+			rate, _ := strconv.Atoi(line)
+			deposit.Rate = float32(rate)
 			continue
 		}
 
 		// Если нашли все данные, выходим
-		if deposit.BankName != "" && deposit.DepositName != "" && deposit.Rate != "" && deposit.Income != "" {
+		if deposit.BankName != "" && deposit.DepositName != "" && deposit.Rate != 0 {
 			break
 		}
 	}
@@ -178,7 +179,7 @@ func (s *Scraper) parseCardData(text string) DepositCard {
 }
 
 // PrintCards выводит карточки в форматированном виде
-func (s *Scraper) PrintCards(cards []DepositCard) {
+func (s *Scraper) PrintCards(cards []models.BankRate) {
 	fmt.Println("\nСобранные данные карточек:")
 	fmt.Println("==========================================")
 	fmt.Printf("Всего карточек: %d\n\n", len(cards))
@@ -188,7 +189,6 @@ func (s *Scraper) PrintCards(cards []DepositCard) {
 		fmt.Printf("  Банк: %s\n", card.BankName)
 		fmt.Printf("  Вклад: %s\n", card.DepositName)
 		fmt.Printf("  Ставка: %s\n", card.Rate)
-		fmt.Printf("  Доход: %s\n", card.Income)
 		fmt.Println("  ------------------------------------")
 	}
 }

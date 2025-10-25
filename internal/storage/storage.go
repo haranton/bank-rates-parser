@@ -17,7 +17,7 @@ func NewStorage(db *sqlx.DB) *Storage {
 }
 
 // CreateBankRate добавляет новую запись о банке.
-func (st *Storage) CreateBankRate(ctx context.Context, bankRate models.BankRate) error {
+func (st *Storage) CreateUpdateBankRate(ctx context.Context, bankRate models.BankRate) error {
 	query := `
 		INSERT INTO bank_rates (bank_name, deposit_name, rate)
 		VALUES ($1, $2, $3)

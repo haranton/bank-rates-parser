@@ -26,6 +26,8 @@ type Config struct {
 	Migrations struct {
 		Path string `yaml:"path"`
 	} `yaml:"migrations"`
+
+	NotifyServiceAddr string `yaml:"NotifyServiceAddr"`
 }
 
 // MustLoad загружает YAML-конфиг или падает, если не удалось

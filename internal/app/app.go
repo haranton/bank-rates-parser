@@ -4,35 +4,44 @@ import (
 	"bank-rates-parser/internal/config"
 	"bank-rates-parser/internal/db"
 	"bank-rates-parser/internal/scraper"
+	"bank-rates-parser/internal/sender"
 	"bank-rates-parser/internal/storage"
+	"context"
 	"log/slog"
-	"net/http"
-	"time"
 )
 
 type App struct {
-	cfg     *config.Config
-	logger  *slog.Logger
-	storage *storage.Storage
-	scraper *scraper.Scraper
+	cfg    *config.Config
+	logger *slog.Logger
+	sender *sender.Sender
+	scrp   *scraper.Scraper
 }
 
-func New(cfg *config.Config, slogger *slog.Logger) (*App, error) {
+func New(cfg *config.Config, slogger *slog.Logger) *App {
+
 	dbConn := db.GetDBConnect(cfg, slogger)
-	if err := db.RunMigrations(cfg, slogger); err != nil {
-		return nil, err
-	}
+	db.MustRunMigrations(cfg, slogger)
 
 	storage := storage.NewStorage(dbConn)
-	f := scraper.NewScraper()
+	scrp := scraper.NewScraper(slogger)
 
-	svc := service.NewService(rep, f)
-	s := sender.NewSender(svc, b, slogger)
-	hand := handler.NewHandler(svc, b, slogger)
+	send, err := sender.NewSender(storage, scrp, slogger, cfg)
+	if err != nil {
+		panic(err)
+	}
 
 	return &App{
-		cfg:        cfg,
-		logger:     slogger,
-		httpClient: &http.Client{Timeout: 35 * time.Second},
-	}, nil
+		cfg:    cfg,
+		logger: slogger,
+		sender: send,
+		scrp:   scrp,
+	}
+}
+
+func (app *App) Start(ctx context.Context) {
+	app.sender.Start(ctx)
+}
+
+func (app *App) Close() {
+	app.scrp.Close()
 }
