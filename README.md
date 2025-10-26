@@ -1,6 +1,6 @@
 Bank Rates Parser
 
-Микросервисное приложение для парсинга курсов валют с веб-сайтов банков и отправки уведомлений пользователям через gRPC-сервис.
+Bank Rates Parser — это микросервисное приложение для парсинга курсов валют с веб-сайтов банков и последующей отправки уведомлений пользователям через gRPC-сервис.
 
 Архитектура проекта
 
@@ -19,7 +19,7 @@ Bank Rates Parser
 ├── docker-compose.yml  # Оркестрация сервисов
 └── README.md
 
-Сервисы
+Описание сервисов
 Сервис	Назначение
 parser	Парсит курсы валют с сайтов банков с использованием Selenium и сохраняет результаты в базу данных PostgreSQL.
 notify	Получает данные о курсах через gRPC и отправляет уведомления пользователям (например, в Telegram).
@@ -73,7 +73,7 @@ selenium:
 notify:
   address: grpc-notify:50051
 
-3. Запуск проекта
+3. Сборка и запуск проекта
 
 Для сборки и запуска всех сервисов используйте команду:
 
@@ -82,65 +82,10 @@ docker compose up -d --build
 
 После запуска будут активны следующие контейнеры:
 
-postgres_db_parser — PostgreSQL
+postgres_db_parser — база данных PostgreSQL
 
 chrome — Selenium
 
 BankRateParser — сервис парсинга
 
 grpc-notify — сервис уведомлений
-
-Проверить состояние контейнеров:
-
-docker compose ps
-
-
-Просмотр логов конкретного сервиса:
-
-docker compose logs -f parser
-
-Работа с базой данных
-
-Миграции базы данных применяются автоматически при запуске контейнера parser.
-Файлы миграций располагаются в директории bank-rates/migrations/.
-
-Применение миграций вручную:
-
-docker exec -it BankRateParser ./main migrate up
-
-
-Подключение к базе данных:
-
-docker exec -it postgres_db_parser psql -U db -d parser_bank_rate_db
-
-Взаимодействие сервисов
-
-Сервисы взаимодействуют через gRPC по заранее описанному протоколу, определённому в файле:
-
-bank-rates/proto/notification.proto
-
-
-Общий поток данных:
-
-Selenium → Parser → PostgreSQL → gRPC Notify → Telegram
-
-Структура проекта (основные компоненты)
-bank-rates/
-├── cmd/
-│   └── main.go             # Точка входа
-├── internal/
-│   ├── app/                # Инициализация приложения
-│   ├── db/                 # Работа с базой данных
-│   ├── scraper/            # Логика парсинга
-│   ├── sender/             # Отправка данных в сервис уведомлений
-│   ├── pb/                 # gRPC сгенерированные файлы
-│   └── logger/             # Настройка логирования
-├── migrations/             # SQL-миграции
-└── config/local.yaml       # Конфигурационный файл
-
-Полезные команды
-Команда	Описание
-docker compose up -d	Запуск проекта в фоновом режиме
-docker compose down -v	Остановка проекта и удаление данных
-docker compose logs -f parser	Просмотр логов сервиса парсера
-docker exec -it postgres_db_parser psql -U db -d parser_bank_rate_db	Подключение к базе данных

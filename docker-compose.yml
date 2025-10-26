@@ -25,7 +25,7 @@ services:
     image: postgres:15
     container_name: postgres_db_parser
     environment:
-      POSTGRES_DB: db
+      POSTGRES_DB: parser_bank_rate_db
       POSTGRES_USER: db
       POSTGRES_PASSWORD: db
     ports:

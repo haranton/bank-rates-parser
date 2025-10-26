@@ -5,7 +5,7 @@ database:
   port: 5432
   user: db
   password: db
-  name: db
+  name: parser_bank_rate_db
 
 env: PRODUCTION   # возможные значения: PRODUCTION или DEBUG
 
