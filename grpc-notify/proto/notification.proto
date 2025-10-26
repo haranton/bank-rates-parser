@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package notification;
+
+option go_package = "grpc-notify/proto;proto";
+
+service NotificationService {
+  rpc SendNotification (NotificationRequest) returns (NotificationResponse);
+}
+
+message NotificationRequest {
+  string type = 1;     // тип уведомления ("telegram", "email" и т.п.)
+  string target = 2;   // кому отправлять (chat_id, email, user_id)
+  string message = 3;  // текст сообщения
+}
+
+message NotificationResponse {
+  bool success = 1;    // успешна ли отправка
+  string error = 2;    // описание ошибки, если есть
+}

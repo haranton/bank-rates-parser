@@ -1,0 +1,6 @@
+env: "DEBUG"
+grpc: 
+  port: 50051
+  timeout: 10h
+token: "8391839878:AAFmasyWjix_tAaveCVoG4oDdB3we35H_OM"
+chatid: -1003116339526

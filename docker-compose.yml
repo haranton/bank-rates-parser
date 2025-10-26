@@ -5,15 +5,21 @@ services:
       - "4444:4444"
     shm_size: 2gb
     
-  # parser:
-  #   build: .
-  #   container_name: bot
-  #   env_file:
-  #     - .env
-  #   ports:
-  #     - "8080:8080"
-  #   depends_on:
-  #     - db
+  parser:
+    build: ./bank-rates
+    container_name: BankRateParser
+    ports:
+      - "8085:8085"
+    depends_on:
+      - db
+      - chrome
+    
+
+  notify:
+    build: ./grpc-notify
+    container_name: grpc-notify
+    ports:
+      - "50051:50051"
 
   db:
     image: postgres:15

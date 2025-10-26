@@ -1,5 +1,3 @@
-app:
-  port: 8080
 
 database:
   host: localhost
@@ -9,7 +7,7 @@ database:
   password: db
   name: db
 
-env: DEBUG   # возможные значения: PRODUCTION или DEBUG
+env: PRODUCTION   # возможные значения: PRODUCTION или DEBUG
 
 migrations:
   path: ./migrations
@@ -21,4 +19,4 @@ worker:
   count: 10
 
 #todo
-NotifyServiceAddr: "localhost:50051" 
+NotifyServiceAddr: "notify:50051" 

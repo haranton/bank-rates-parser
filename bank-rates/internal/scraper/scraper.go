@@ -34,7 +34,7 @@ func (s *Scraper) Initialize() {
 	fmt.Println("Проверяем подключение к Selenium...")
 
 	caps := selenium.Capabilities{"browserName": "chrome"}
-	wd, err := selenium.NewRemote(caps, "http://localhost:4444/wd/hub")
+	wd, err := selenium.NewRemote(caps, "http://chrome:4444/wd/hub")
 	if err != nil {
 		msgErr := fmt.Errorf("ошибка подключения: %v", err)
 		panic(msgErr)

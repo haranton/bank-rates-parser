@@ -42,7 +42,7 @@ func NewSender(storage *storage.Storage, scraper *scraper.Scraper, logger *slog.
 }
 
 func (s *Sender) Start(ctx context.Context) {
-	tickerScraping := time.NewTicker(5 * time.Second)
+	tickerScraping := time.NewTicker(15 * time.Second)
 
 	go func() {
 		for range tickerScraping.C {
@@ -50,7 +50,7 @@ func (s *Sender) Start(ctx context.Context) {
 		}
 	}()
 
-	tickerAnalitic := time.NewTicker(3 * time.Second)
+	tickerAnalitic := time.NewTicker(24 * time.Hour)
 
 	go func() {
 		for range tickerAnalitic.C {
